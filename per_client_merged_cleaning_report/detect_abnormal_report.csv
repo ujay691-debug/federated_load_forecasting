@@ -1,0 +1,10 @@
+﻿file,old_rows,bad_time_count,duplicate_timestamp_rows_all,duplicate_timestamp_rows_extra,duplicate_unique_timestamps,required_cols_checked,missing_rows_in_required_cols,missing_unique_timestamps,missing_by_col,abnormal_unique_timestamps_this_file
+client_1_load_weather_30min.csv,52595,0,12,6,6,"gc,gg,cl,total_load,temp2m_c,wind10m_ms,ghi_wm2,rrp_aud_per_mwh",26,26,"{'temp2m_c': 6, 'wind10m_ms': 6, 'ghi_wm2': 6, 'rrp_aud_per_mwh': 20}",32
+client_2_load_weather_30min.csv,52595,0,12,6,6,"gc,gg,cl,total_load,temp2m_c,wind10m_ms,ghi_wm2,rrp_aud_per_mwh",26,26,"{'temp2m_c': 6, 'wind10m_ms': 6, 'ghi_wm2': 6, 'rrp_aud_per_mwh': 20}",32
+client_3_load_weather_30min.csv,52595,0,12,6,6,"gc,gg,cl,total_load,temp2m_c,wind10m_ms,ghi_wm2,rrp_aud_per_mwh",26,26,"{'temp2m_c': 6, 'wind10m_ms': 6, 'ghi_wm2': 6, 'rrp_aud_per_mwh': 20}",32
+client_4_load_weather_30min.csv,52614,0,12,6,6,"gc,gg,cl,total_load,temp2m_c,wind10m_ms,ghi_wm2,rrp_aud_per_mwh",45,45,"{'temp2m_c': 25, 'wind10m_ms': 25, 'ghi_wm2': 25, 'rrp_aud_per_mwh': 20}",51
+client_5_load_weather_30min.csv,52614,0,12,6,6,"gc,gg,cl,total_load,temp2m_c,wind10m_ms,ghi_wm2,rrp_aud_per_mwh",45,45,"{'temp2m_c': 25, 'wind10m_ms': 25, 'ghi_wm2': 25, 'rrp_aud_per_mwh': 20}",51
+client_6_load_weather_30min.csv,52614,0,12,6,6,"gc,gg,cl,total_load,temp2m_c,wind10m_ms,ghi_wm2,rrp_aud_per_mwh",45,45,"{'temp2m_c': 25, 'wind10m_ms': 25, 'ghi_wm2': 25, 'rrp_aud_per_mwh': 20}",51
+client_7_load_weather_30min.csv,52614,0,12,6,6,"gc,gg,cl,total_load,temp2m_c,wind10m_ms,ghi_wm2,rrp_aud_per_mwh",45,45,"{'temp2m_c': 25, 'wind10m_ms': 25, 'ghi_wm2': 25, 'rrp_aud_per_mwh': 20}",51
+client_8_load_weather_30min.csv,52614,0,12,6,6,"gc,gg,cl,total_load,temp2m_c,wind10m_ms,ghi_wm2,rrp_aud_per_mwh",45,45,"{'temp2m_c': 25, 'wind10m_ms': 25, 'ghi_wm2': 25, 'rrp_aud_per_mwh': 20}",51
+client_9_load_weather_30min.csv,52614,0,12,6,6,"gc,gg,cl,total_load,temp2m_c,wind10m_ms,ghi_wm2,rrp_aud_per_mwh",45,45,"{'temp2m_c': 25, 'wind10m_ms': 25, 'ghi_wm2': 25, 'rrp_aud_per_mwh': 20}",51

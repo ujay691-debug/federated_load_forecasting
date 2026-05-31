@@ -1,0 +1,10 @@
+﻿client_id,client_name,local_better_targets_gt1pct,fedavg_better_targets_gt1pct,local_better_count_gt1pct,fedavg_better_count_gt1pct,mean_rmse_change_pct_Local_minus_FedAvg,max_local_improvement_pct,recommendation
+1,client_1,gc,gg,1,1,0.3713711915230283,1.273027873653965,mixed_or_near_tie
+2,client_2,,"gg,net_load",0,2,1.5313675335038326,-0.6507513953646035,fedavg_sufficient_or_better
+3,client_3,gc,gg,1,1,0.46517454838353234,3.0178050413848734,mixed_or_near_tie
+4,client_4,,"gc,gg,net_load",0,3,3.9608477459990503,-2.884557794090729,fedavg_sufficient_or_better
+5,client_5,"gc,net_load",gg,2,1,-1.0184435832002963,8.761158434076073,strong_personalization_candidate
+6,client_6,,"gc,gg,net_load",0,3,4.275458017257079,-1.952235360101124,fedavg_sufficient_or_better
+7,client_7,,"gc,net_load",0,2,2.9559826982889477,-0.4781719852253474,fedavg_sufficient_or_better
+8,client_8,,gg,0,1,0.36948878692626036,0.28929654058534027,mixed_or_near_tie
+9,client_9,"gc,net_load",gg,2,1,-8.42836976008275,15.796153805327126,strong_personalization_candidate

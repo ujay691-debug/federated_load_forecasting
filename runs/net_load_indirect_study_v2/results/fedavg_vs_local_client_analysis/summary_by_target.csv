@@ -1,0 +1,4 @@
+﻿target,target_label,FedAvg_mean_RMSE,Local_mean_RMSE,mean_delta_Local_minus_FedAvg_RMSE,mean_delta_pct_Local_minus_FedAvg_RMSE,FedAvg_mean_R2,Local_mean_R2,local_better_clients_exact,fedavg_better_clients_exact,local_better_count_exact,fedavg_better_count_exact,tie_within_1pct_clients,tie_within_1pct_count
+gc,GC,1.3007054820302049,1.2676965822724509,-0.03300889975775401,-2.5377689426073684,0.8760318358739217,0.8855850630336337,"1,3,5,8,9","2,4,6,7",5,4,"2,8",2
+gg,GG,0.6998145640853591,0.7252290291891392,0.025414465103780093,3.631599913470819,0.9737451208962334,0.9719613194465637,,"1,2,3,4,5,6,7,8,9",0,9,7,1
+net_load,Net load,1.4945326304228128,1.4867763663169946,-0.0077562641058182,-0.5189758957369772,0.9406855437490675,0.9411667651600308,"1,3,5,8,9","2,4,6,7",5,4,"1,3,8",3

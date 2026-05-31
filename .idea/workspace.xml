@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="41b39031-b21b-47e9-b721-ada33dd653da" name="更改" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 3
+}</component>
+  <component name="ProjectId" id="3CIL6XMGdRUgzF1cgwCoPhPw6VK" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.1.executor": "Run",
+    "Python.and_weibull_netload_client1.executor": "Run",
+    "Python.cnn_lstm_attention_netload_client1.executor": "Run",
+    "Python.config.executor": "Run",
+    "Python.decentralized_gcml_main.executor": "Run",
+    "Python.decomposed_net_load_main.executor": "Run",
+    "Python.dj.executor": "Run",
+    "Python.federated_main.executor": "Run",
+    "Python.电价.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "last_opened_file_path": "C:/Users/Lenovo/Downloads/federated_load_forecasting",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "com.android.studio.ml.bot.mainConfigurable",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-6a121458b545-JavaScript-PY-251.25410.159" />
+        <option value="bundled-python-sdk-e0ed3721d81e-36ea0e71a18c-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-251.25410.159" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="默认任务">
+      <changelist id="41b39031-b21b-47e9-b721-ada33dd653da" name="更改" comment="" />
+      <created>1776067962463</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1776067962463</updated>
+      <workItem from="1776067963482" duration="361000" />
+      <workItem from="1776069651270" duration="468000" />
+      <workItem from="1776081548726" duration="4141000" />
+      <workItem from="1776156488218" duration="2981000" />
+      <workItem from="1777028079749" duration="1467000" />
+      <workItem from="1777362566756" duration="3782000" />
+      <workItem from="1777447400898" duration="1439000" />
+      <workItem from="1777549801653" duration="107000" />
+      <workItem from="1777549919072" duration="202000" />
+      <workItem from="1777550134312" duration="2976000" />
+      <workItem from="1778391923832" duration="6592000" />
+      <workItem from="1778499045371" duration="5427000" />
+      <workItem from="1778575693211" duration="9355000" />
+      <workItem from="1778648970638" duration="17536000" />
+      <workItem from="1778719803377" duration="9665000" />
+      <workItem from="1779170673240" duration="1928000" />
+      <workItem from="1779365772668" duration="3480000" />
+      <workItem from="1779431202202" duration="13896000" />
+      <workItem from="1779605884130" duration="7117000" />
+      <workItem from="1779615533275" duration="719000" />
+      <workItem from="1779616517133" duration="154000" />
+      <workItem from="1779798404881" duration="1357000" />
+      <workItem from="1779861024056" duration="5578000" />
+      <workItem from="1780040604089" duration="3377000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/federated_main.py</url>
+          <line>1396</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/decentralized_gcml_main.py</url>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/config.py</url>
+          <line>80</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/config.py</url>
+          <line>112</line>
+          <option name="timeStamp" value="7" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/config.py</url>
+          <line>199</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/and_weibull_netload_client1.py</url>
+          <line>234</line>
+          <option name="timeStamp" value="9" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/federated_load_forecasting$decentralized_gcml_main.coverage" NAME="decentralized_gcml_main 覆盖结果" MODIFIED="1778728149942" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/federated_load_forecasting$decomposed_net_load_main.coverage" NAME="decomposed_net_load_main 覆盖结果" MODIFIED="1779864295859" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/federated_load_forecasting$dj.coverage" NAME="dj 覆盖结果" MODIFIED="1779606395432" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/federated_load_forecasting$federated_main.coverage" NAME="federated_main 覆盖结果" MODIFIED="1779615557989" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/federated_load_forecasting$and_weibull_netload_client1.coverage" NAME="and_weibull_netload_client1 覆盖结果" MODIFIED="1780043581350" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/federated_load_forecasting$.coverage" NAME="电价 覆盖结果" MODIFIED="1779367258614" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/federated_load_forecasting$config.coverage" NAME="config 覆盖结果" MODIFIED="1778423101903" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/federated_load_forecasting$cnn_lstm_attention_netload_client1.coverage" NAME="cnn_lstm_attention_netload_client1 覆盖结果" MODIFIED="1780045195759" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/federated_load_forecasting$1.coverage" NAME="1 覆盖结果" MODIFIED="1779607552774" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+  </component>
+</project>

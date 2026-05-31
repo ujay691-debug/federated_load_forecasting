@@ -1,0 +1,9 @@
+﻿client_id,client_name,loss,MAE,RMSE,MAPE_percent,R2,model_path
+1,client_1,0.0013208534740836624,0.3090514540672302,0.6739379129947138,188464475.0,0.9765003323554993,C:\Users\Lenovo\Downloads\federated_load_forecasting\runs\all_clients_disjoint_bidirectional\gg_model\best_client_1_model.pth
+2,client_2,0.0012826242576328408,0.3056557774543762,0.6526513430954558,214480875.0,0.9777469038963318,C:\Users\Lenovo\Downloads\federated_load_forecasting\runs\all_clients_disjoint_bidirectional\gg_model\best_client_2_model.pth
+3,client_3,0.0014610600845330285,0.32700327038764954,0.732432332282118,157673425.0,0.9703778028488159,C:\Users\Lenovo\Downloads\federated_load_forecasting\runs\all_clients_disjoint_bidirectional\gg_model\best_client_3_model.pth
+4,client_4,0.0014604287401152331,0.3319508731365204,0.770649944003816,105333650.0,0.9672908782958984,C:\Users\Lenovo\Downloads\federated_load_forecasting\runs\all_clients_disjoint_bidirectional\gg_model\best_client_4_model.pth
+5,client_5,0.001459252708524053,0.5026185512542725,1.1148183818408972,175054162.5,0.9709879755973816,C:\Users\Lenovo\Downloads\federated_load_forecasting\runs\all_clients_disjoint_bidirectional\gg_model\best_client_5_model.pth
+6,client_6,0.0015726877531300172,0.2881466746330261,0.619244852528991,227530800.0,0.9721429347991943,C:\Users\Lenovo\Downloads\federated_load_forecasting\runs\all_clients_disjoint_bidirectional\gg_model\best_client_6_model.pth
+7,client_7,0.001359471752360764,0.23048605024814606,0.5001404982103109,173631600.0,0.9735251069068909,C:\Users\Lenovo\Downloads\federated_load_forecasting\runs\all_clients_disjoint_bidirectional\gg_model\best_client_7_model.pth
+8,client_8,0.0012629825184509555,0.2953963279724121,0.6485233939399065,207793837.5,0.9697731137275696,C:\Users\Lenovo\Downloads\federated_load_forecasting\runs\all_clients_disjoint_bidirectional\gg_model\best_client_8_model.pth

@@ -1,0 +1,9 @@
+﻿run,c9_RMSE,others_mean_RMSE,c9_R2,others_mean_R2,c9_RMSE_rank_desc,c9_R2_rank_asc
+runs\gc_h2a_sweep\06_h2a_refs5_fc2_only_head\per_client_results\all_clients_test_metrics_summary.csv,1.6745544068640623,1.3173440198233053,0.726186990737915,0.8835616856813431,1,1
+runs\gc_h2a_sweep\05_h2a_refs5_attn_head\per_client_results\all_clients_test_metrics_summary.csv,1.656545576675864,1.3096808895823209,0.7320446968078613,0.8862065076828003,1,1
+runs\gc_h2a_sweep\04_h2a_refs3_attn_feature\per_client_results\all_clients_test_metrics_summary.csv,1.7245879468958285,1.3234707471757274,0.7095801830291748,0.8834556043148041,1,1
+runs\gc_h2a_sweep\03_h2a_refs5_attn_feature\per_client_results\all_clients_test_metrics_summary.csv,1.8887594177092089,1.3884910212355717,0.6516555547714233,0.8731941133737564,1,1
+runs\gc_h2a_sweep\02_h2a_refs9_attn_feature\per_client_results\all_clients_test_metrics_summary.csv,1.8404735612988543,1.364174398053087,0.6692386865615845,0.8768965229392052,1,1
+runs\gc_h2a_sweep\01_fedavg_same_setting\per_client_results\all_clients_test_metrics_summary.csv,1.6842894919919416,1.262617107366847,0.7229940891265869,0.893837496638298,1,1
+runs\federated_h2a_gc_only-9\per_client_results\all_clients_test_metrics_summary.csv,1.6963785221489704,1.327951440701198,0.719003438949585,0.8823807537555695,1,1
+runs\net_load_indirect_study_v2\results\fedub_rc_tau0p3_lambda0p0_indirect_net_load\indirect_net_load\gc_model\per_client_results\all_clients_test_metrics_summary.csv,1.7625028299078982,1.2474150066146237,0.6966701149940491,0.8960837796330452,1,1

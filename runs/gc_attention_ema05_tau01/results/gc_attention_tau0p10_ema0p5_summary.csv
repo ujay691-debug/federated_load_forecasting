@@ -1,0 +1,2 @@
+﻿experiment,rc_lambda,head_prefixes,tau,warmup_rounds,head_mask_update_interval,use_head_importance_ema,head_importance_ema_beta,save_dir,regional_RMSE,regional_MAE,regional_R2,avg_client_RMSE,avg_client_MAE,avg_client_R2
+gc_attention_tau0p10_ema0p5_lambda1p0,1.0,attention,0.1,5,1,True,0.5,runs/gc_attention_ema05_tau01\results\gc_attention_tau0p10_ema0p5_lambda1p0,4.71985719335439,3.533540964126587,0.9770292043685913,1.3238880809238252,1.0010062389903598,0.872330923875173

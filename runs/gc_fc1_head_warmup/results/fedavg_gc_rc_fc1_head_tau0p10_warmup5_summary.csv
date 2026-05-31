@@ -1,0 +1,2 @@
+﻿experiment,rc_lambda,head_prefixes,tau,warmup_rounds,save_dir,regional_MAE,regional_MSE,regional_RMSE,regional_MAPE_percent,regional_R2,avg_client_MAE,avg_client_MSE,avg_client_RMSE,avg_client_MAPE_percent,avg_client_R2
+fedavg_gc_rc_fc1_head_tau0p10_warmup5_lambda1p0,1.0,fc1,0.1,5,runs/gc_fc1_head_warmup\results\fedavg_gc_rc_fc1_head_tau0p10_warmup5_lambda1p0,3.4851789474487305,21.16391944885254,4.6004260073228584,4.473640024662018,0.9781769514083862,0.9757269952032301,1.7051811615626018,1.2934979275036191,11.645685964160496,0.8784602350658841

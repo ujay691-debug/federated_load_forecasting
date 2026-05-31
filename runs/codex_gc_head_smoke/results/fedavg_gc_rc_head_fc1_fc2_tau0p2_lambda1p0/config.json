@@ -1,0 +1,266 @@
+{
+  "data": {
+    "client_files": [
+      "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\per_client_merged\\client_1_load_weather_30min.csv",
+      "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\per_client_merged\\client_2_load_weather_30min.csv",
+      "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\per_client_merged\\client_3_load_weather_30min.csv",
+      "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\per_client_merged\\client_4_load_weather_30min.csv",
+      "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\per_client_merged\\client_5_load_weather_30min.csv",
+      "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\per_client_merged\\client_6_load_weather_30min.csv",
+      "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\per_client_merged\\client_7_load_weather_30min.csv",
+      "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\per_client_merged\\client_8_load_weather_30min.csv",
+      "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\per_client_merged\\client_9_load_weather_30min.csv"
+    ],
+    "datetime_col": "timestamp",
+    "target_col": "gc",
+    "net_load_col": "net_load",
+    "seq_len": 48,
+    "horizon": 1,
+    "train_ratio": 0.8,
+    "val_ratio": 0.1,
+    "dropna": true,
+    "sort_by_time": true,
+    "freq_minutes": "auto",
+    "use_time_range": false,
+    "start_time": null,
+    "end_time": null
+  },
+  "feature": {
+    "use_target_history": true,
+    "raw_feature_cols": [],
+    "use_slot_sin_cos": true,
+    "use_weekday_sin_cos": true,
+    "use_month_sin_cos": true,
+    "use_is_weekend": true,
+    "use_is_holiday": false,
+    "use_temp_c": true,
+    "temp_source_mode": "auto",
+    "temp_c_col": "temp2m_c",
+    "temp_k_col": "temp2m_k",
+    "use_rh": false,
+    "rh_col": "rh2m_pct",
+    "use_wind": true,
+    "wind_col": "wind10m_ms",
+    "use_ghi": true,
+    "ghi_col": "ghi_wm2",
+    "use_apparent_temp": false,
+    "no_scale_cols": [
+      "is_weekend",
+      "is_holiday"
+    ]
+  },
+  "gc_feature": {
+    "use_target_history": true,
+    "raw_feature_cols": [],
+    "use_slot_sin_cos": true,
+    "use_weekday_sin_cos": true,
+    "use_month_sin_cos": true,
+    "use_is_weekend": true,
+    "use_is_holiday": false,
+    "use_temp_c": true,
+    "temp_source_mode": "auto",
+    "temp_c_col": "temp2m_c",
+    "temp_k_col": "temp2m_k",
+    "use_rh": false,
+    "rh_col": "rh2m_pct",
+    "use_wind": true,
+    "wind_col": "wind10m_ms",
+    "use_ghi": true,
+    "ghi_col": "ghi_wm2",
+    "use_apparent_temp": false,
+    "no_scale_cols": [
+      "is_weekend",
+      "is_holiday"
+    ]
+  },
+  "gg_feature": {
+    "use_target_history": true,
+    "raw_feature_cols": [],
+    "use_slot_sin_cos": false,
+    "use_weekday_sin_cos": false,
+    "use_month_sin_cos": false,
+    "use_is_weekend": false,
+    "use_is_holiday": false,
+    "use_temp_c": true,
+    "temp_source_mode": "auto",
+    "temp_c_col": "temp2m_c",
+    "temp_k_col": "temp2m_k",
+    "use_rh": false,
+    "rh_col": "rh2m_pct",
+    "use_wind": true,
+    "wind_col": "wind10m_ms",
+    "use_ghi": true,
+    "ghi_col": "ghi_wm2",
+    "use_apparent_temp": false,
+    "no_scale_cols": [
+      "is_weekend",
+      "is_holiday"
+    ]
+  },
+  "model": {
+    "use_attention": true,
+    "conv1_channels": 32,
+    "conv2_channels": 64,
+    "conv1_kernel": 3,
+    "conv2_kernel": 3,
+    "pool1_kernel": 2,
+    "pool2_kernel": 3,
+    "lstm_hidden1": 32,
+    "lstm_hidden2": 16,
+    "attn_units": 20,
+    "fc_hidden": 16,
+    "dropout": 0.0
+  },
+  "train": {
+    "batch_size": 128,
+    "epochs": 1,
+    "early_stop_patience": 1,
+    "lr": 0.001,
+    "random_seed": 2024,
+    "num_workers": 0,
+    "pin_memory": true,
+    "loss_name": "mse",
+    "optimizer_name": "adam",
+    "scaler_x": "minmax",
+    "scaler_y": "minmax",
+    "device": "cuda"
+  },
+  "experiment": {
+    "task_type": "single_target",
+    "net_load_method": "indirect"
+  },
+  "federated": {
+    "aggregation_method": "fedavg",
+    "rounds": 1,
+    "local_epochs": 1,
+    "client_fraction": 1.0,
+    "eval_every": 1,
+    "save_dir": "runs/codex_gc_head_smoke\\results\\fedavg_gc_rc_head_fc1_fc2_tau0p2_lambda1p0",
+    "checkpoint_dir": "runs/codex_gc_head_smoke\\checkpoints\\fedavg_gc_rc_head_fc1_fc2_tau0p2_lambda1p0",
+    "best_model_name": "best_global_model.pth",
+    "best_checkpoint_name": "best_global_checkpoint.pth",
+    "final_model_name": "final_global_model.pth",
+    "early_stop_patience": 1,
+    "use_rc_regularization": true,
+    "rc_lambda": 1.0,
+    "use_head_personalization": true,
+    "head_personalization_tau": 0.2,
+    "head_param_prefixes": [
+      "fc1",
+      "fc2"
+    ],
+    "h2a_num_refs": 5,
+    "h2a_embed_dim": 16,
+    "h2a_shared_hidden_dim": 32,
+    "h2a_branch_hidden_dim": 64,
+    "h2a_meta_lr": 0.001,
+    "h2a_gamma": 0.25,
+    "h2a_warmup_use_all_clients": true,
+    "h2a_reference_mode": "fixed",
+    "h2a_fixed_missing_policy": "adaptive",
+    "h2a_fixed_ref_client_ids": {
+      "1": [
+        8,
+        6,
+        7
+      ],
+      "2": [
+        5,
+        3,
+        8
+      ],
+      "3": [
+        5,
+        2,
+        8
+      ],
+      "4": [
+        2,
+        5,
+        3
+      ],
+      "5": [
+        2,
+        3,
+        8
+      ],
+      "6": [
+        7,
+        1,
+        8
+      ],
+      "7": [
+        6,
+        1,
+        8
+      ],
+      "8": [
+        1,
+        5,
+        3
+      ]
+    },
+    "h2a_feature_param_prefixes": [
+      "conv1",
+      "conv2",
+      "lstm1",
+      "lstm2"
+    ],
+    "h2a_head_param_prefixes": [
+      "attention",
+      "fc1",
+      "fc2"
+    ],
+    "h2a_unmatched_param_policy": "error"
+  },
+  "centralized": {
+    "save_dir": "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\runs\\centralized",
+    "best_model_name": "best_centralized_model.pth"
+  },
+  "decentralized_gcml": {
+    "training_mode": "all_clients_disjoint_bidirectional",
+    "active_client_ids": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "global_rounds": 20,
+    "rounds": 20,
+    "local_epochs": 1,
+    "warmup_local_epochs": 1,
+    "pair_schedule_mode": "round_robin_disjoint",
+    "bidirectional_pair_update": true,
+    "transfer_epochs": 1,
+    "lambda_transfer": 0.03,
+    "repulsion_lambda": 0.005,
+    "repulsion_margin": 0.05,
+    "alpha_grid_step": 0.05,
+    "rho": 0.02,
+    "r_max": 0.5,
+    "a_max": 1.0,
+    "eps": 1e-08,
+    "eval_every": 1,
+    "save_dir": "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\runs\\all_clients_disjoint_bidirectional",
+    "existing_gc_prediction_dir": null,
+    "gg_model_subdir": "gg_model",
+    "net_load_from_existing_gc_subdir": "net_load_from_existing_gc",
+    "pair_mode": "alternate",
+    "receiver_client_id": 5,
+    "sender_candidate_client_ids": [
+      6,
+      7,
+      2
+    ],
+    "sender_selection_mode": "round_robin",
+    "enable_merge_rollback": true,
+    "best_model_name_template": "best_client_{client_id}_model.pth",
+    "best_model_name_client1": "best_client_1_model.pth",
+    "best_model_name_client2": "best_client_2_model.pth",
+    "best_receiver_model_name": "best_receiver_client_5_model.pth"
+  }
+}

@@ -1,0 +1,11 @@
+﻿task,metric,gcml_wins,fedavg_wins,ties,num_common_clients
+gg,loss,0,8,0,8
+gg,MAE,0,8,0,8
+gg,RMSE,0,8,0,8
+gg,MAPE_percent,0,8,0,8
+gg,R2,0,8,0,8
+net_load,loss,0,8,0,8
+net_load,MAE,5,3,0,8
+net_load,RMSE,5,3,0,8
+net_load,MAPE_percent,7,1,0,8
+net_load,R2,5,3,0,8

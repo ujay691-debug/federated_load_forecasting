@@ -1,0 +1,58 @@
+{
+  "data_path": "per_client_merged/client_1_load_weather_30min.csv",
+  "data_path_abs": "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\per_client_merged\\client_1_load_weather_30min.csv",
+  "save_dir": "runs/and_weibull_netload_client1",
+  "save_dir_abs": "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\runs\\and_weibull_netload_client1",
+  "feature_mode": "net_load_only",
+  "seq_len": 24,
+  "batch_size": 256,
+  "epochs": 200,
+  "learning_rate": 0.001,
+  "ste_alpha": 0.1,
+  "early_stop_patience": 3,
+  "optimizer": "Adam",
+  "seed": 42,
+  "train_ratio": 0.8,
+  "val_ratio": 0.1,
+  "test_ratio": 0.09999999999999995,
+  "lstm_input_size": 1,
+  "lstm_hidden_units": 24,
+  "lstm_num_layers": 1,
+  "loss_weights": {
+    "f1": 1.0,
+    "f2": 1.0,
+    "f3": 1.0
+  },
+  "split_info": {
+    "raw_rows": 52557,
+    "clean_rows": 52557,
+    "train_rows": 42045,
+    "val_rows": 5256,
+    "test_rows": 5256,
+    "train_samples": 42021,
+    "val_samples": 5232,
+    "test_samples": 5232,
+    "train_scaled_min": 0.0,
+    "train_scaled_max": 1.0,
+    "all_scaled_min": -2.7755575615628914e-17,
+    "all_scaled_max": 1.0
+  },
+  "scaler": {
+    "type": "sklearn.MinMaxScaler",
+    "data_min": [
+      -13.401999999999997
+    ],
+    "data_max": [
+      44.0
+    ],
+    "data_range": [
+      57.402
+    ],
+    "scale": [
+      0.01742099578411902
+    ],
+    "min": [
+      0.2334761854987631
+    ]
+  }
+}

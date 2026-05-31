@@ -1,0 +1,6 @@
+﻿metric,all_client_disjoint_bidirectional_mean,fedavg_same_setting_mean,relative_improvement_percent,winner,all_client_wins,fedavg_wins,ties
+MAE,1.0536627483352483,1.0674914361511685,1.2954378225065102,All-client Disjoint Bidirectional,5,3,0
+MSE,2.1055357647118296,2.1543585755431582,2.266234200080617,All-client Disjoint Bidirectional,4,4,0
+RMSE,1.4389765962635086,1.4537851749039443,1.018622207467081,All-client Disjoint Bidirectional,4,4,0
+MAPE_percent,675776.2725078331,597144.0454481111,-13.168050097646782,FedAvg Same Setting,6,2,0
+R2,0.944459566759916,0.9434362970624453,0.1084619810216044,All-client Disjoint Bidirectional,4,4,0
