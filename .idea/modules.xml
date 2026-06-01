@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/federated_load_forecasting.iml" filepath="$PROJECT_DIR$/.idea/federated_load_forecasting.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/federated_load_forecasting_clean.iml" filepath="$PROJECT_DIR$/.idea/federated_load_forecasting_clean.iml" />
     </modules>
   </component>
 </project>
