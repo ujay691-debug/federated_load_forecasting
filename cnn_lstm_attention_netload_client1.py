@@ -54,10 +54,10 @@ class ModelConfig:
     conv2_kernel: int = 3
     pool1_kernel: int = 2
     pool2_kernel: int = 3
-    lstm_hidden1: int = 32
-    lstm_hidden2: int = 16
-    attn_units: int = 20
-    fc_hidden: int = 16
+    lstm_hidden1: int = 48
+    lstm_hidden2: int = 24
+    attn_units: int = 24
+    fc_hidden: int = 24
     dropout: float = 0.0
 
 
@@ -93,10 +93,10 @@ def parse_args():
     )
     parser.add_argument(
         "--save-dir",
-        default="runs/cnn_lstm_attention_netload_client1",
+        default="runs/cnn_lstm_attention_netload_client1_seq48",
         help="Output directory.",
     )
-    parser.add_argument("--seq-len", type=int, default=24)
+    parser.add_argument("--seq-len", type=int, default=48)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--epochs", type=int, default=200)
     parser.add_argument("--lr", type=float, default=1e-3)
@@ -112,10 +112,10 @@ def parse_args():
     )
     parser.add_argument("--conv1-channels", type=int, default=32)
     parser.add_argument("--conv2-channels", type=int, default=64)
-    parser.add_argument("--lstm-hidden1", type=int, default=32)
-    parser.add_argument("--lstm-hidden2", type=int, default=16)
-    parser.add_argument("--attn-units", type=int, default=20)
-    parser.add_argument("--fc-hidden", type=int, default=16)
+    parser.add_argument("--lstm-hidden1", type=int, default=48)
+    parser.add_argument("--lstm-hidden2", type=int, default=24)
+    parser.add_argument("--attn-units", type=int, default=24)
+    parser.add_argument("--fc-hidden", type=int, default=24)
     parser.add_argument("--dropout", type=float, default=0.0)
     return parser.parse_args()
 

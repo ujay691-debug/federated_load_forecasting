@@ -1,8 +1,8 @@
 {
   "data_path": "per_client_merged/client_1_load_weather_30min.csv",
   "data_path_abs": "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\per_client_merged\\client_1_load_weather_30min.csv",
-  "save_dir": "runs/and_weibull_netload_client1",
-  "save_dir_abs": "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\runs\\and_weibull_netload_client1",
+  "save_dir": "runs/and_weibull_netload_client1_ablation_f1_only",
+  "save_dir_abs": "C:\\Users\\Lenovo\\Downloads\\federated_load_forecasting\\runs\\and_weibull_netload_client1_ablation_f1_only",
   "feature_mode": "net_load_only",
   "seq_len": 24,
   "batch_size": 256,
@@ -20,8 +20,8 @@
   "lstm_num_layers": 1,
   "loss_weights": {
     "f1": 1.0,
-    "f2": 1.0,
-    "f3": 1.0
+    "f2": 0.0,
+    "f3": 0.0
   },
   "split_info": {
     "raw_rows": 52557,

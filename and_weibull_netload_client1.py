@@ -73,9 +73,9 @@ class NetLoadWindowDataset(Dataset):
 
 
 class WeibullAttentionLSTM(nn.Module):
-    """LSTM residual dynamics with trainable Weibull attention over time steps."""
+    """LSTM residual dynamics with per-step Weibull attention and residual refinement."""
 
-    def __init__(self, seq_len=24, input_size=1, hidden_size=24, num_layers=1, eps=1e-8):
+    def __init__(self, seq_len=48, input_size=1, hidden_size=48, num_layers=1, eps=1e-8):
         super().__init__()
         self.seq_len = int(seq_len)
         self.hidden_size = int(hidden_size)
@@ -87,11 +87,30 @@ class WeibullAttentionLSTM(nn.Module):
             num_layers=num_layers,
             batch_first=True,
         )
-        self.out = nn.Linear(hidden_size, self.seq_len)
+
+        # Table 1 residual refinement: softplus branch + sigmoid branch -> combined residual.
+        self.softplus_branch = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            nn.Softplus(),
+        )
+        self.sigmoid_branch = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size),
+            nn.Sigmoid(),
+        )
+        self.final_residual = nn.Linear(2 * hidden_size, hidden_size)
+
+        # Figure 3-style residual prediction uses both weighted LSTM states and context vector.
+        self.weighted_lstm_output = nn.Linear(hidden_size, 1)
+        self.context_output = nn.Linear(hidden_size, self.seq_len)
+        self.residual_fusion = nn.Linear(2 * self.seq_len, self.seq_len)
+
         self.register_buffer("tau", torch.arange(1, self.seq_len + 1, dtype=torch.float32))
 
-        self.raw_kappa = nn.Parameter(self._inverse_softplus(1.5))
-        self.raw_lambda = nn.Parameter(self._inverse_softplus(max(1.0, self.seq_len / 2.0)))
+        # Appendix A/Table 1 Weibull parameters are learned per time step, not shared scalars.
+        init_kappa = self._inverse_softplus(1.5)
+        init_lambda = self._inverse_softplus(max(1.0, self.seq_len / 2.0))
+        self.raw_kappa = nn.Parameter(torch.full((self.seq_len,), init_kappa.item()))
+        self.raw_lambda = nn.Parameter(torch.full((self.seq_len,), init_lambda.item()))
 
     @staticmethod
     def _inverse_softplus(value):
@@ -99,26 +118,45 @@ class WeibullAttentionLSTM(nn.Module):
         return torch.log(torch.expm1(value_tensor))
 
     def forward(self, residual_window):
-        residual_seq = residual_window.unsqueeze(-1)  # [B, 24] -> [B, 24, 1]
-        h, _ = self.lstm(residual_seq)  # [B, 24, 24]
+        residual_seq = residual_window.unsqueeze(-1)  # [B, seq_len] -> [B, seq_len, 1]
 
-        tau = self.tau.to(device=h.device, dtype=h.dtype)
+        # Figure 3 LSTM hidden states h_j.
+        h_seq, _ = self.lstm(residual_seq)  # [B, seq_len, hidden_size]
+
+        # Table 1 residual refinement with softplus and sigmoid branches.
+        softplus_out = self.softplus_branch(h_seq)  # [B, seq_len, hidden_size]
+        sigmoid_out = self.sigmoid_branch(h_seq)  # [B, seq_len, hidden_size]
+        combined_residual = torch.cat([softplus_out, sigmoid_out], dim=-1)
+        refined_h_seq = self.final_residual(combined_residual)  # [B, seq_len, hidden_size]
+
+        # Appendix A per-time-step Weibull kappa/lambda and attention alpha_j.
+        tau = self.tau.to(device=refined_h_seq.device, dtype=self.raw_kappa.dtype)
         kappa = F.softplus(self.raw_kappa) + self.eps
         lambda_ = F.softplus(self.raw_lambda) + self.eps
 
-        scaled_tau = tau / lambda_
+        scaled_tau = torch.clamp(tau / lambda_, min=self.eps)
+        scaled_tau_pow = torch.pow(scaled_tau, kappa)
         alpha = (kappa / lambda_) * torch.pow(scaled_tau, kappa - 1.0)
-        alpha = alpha * torch.exp(-torch.pow(scaled_tau, kappa))
+        alpha = alpha * torch.exp(-scaled_tau_pow)
         alpha = alpha / (alpha.sum() + self.eps)
+        alpha = alpha.to(dtype=refined_h_seq.dtype).view(1, self.seq_len, 1)
 
-        context = torch.sum(h * alpha.view(1, self.seq_len, 1), dim=1)
-        return self.out(context)  # [B, 24]
+        # Context vector c = sum_j(alpha_j * h_j), using refined hidden states.
+        weighted_h_seq = refined_h_seq * alpha
+        context = torch.sum(weighted_h_seq, dim=1)  # [B, hidden_size]
+
+        # Fuse weighted LSTM output and context vector to generate the residual prediction.
+        weighted_lstm_output = self.weighted_lstm_output(weighted_h_seq).squeeze(-1)
+        context_output = self.context_output(context)
+        fusion_input = torch.cat([weighted_lstm_output, context_output], dim=-1)
+        residual_pred = self.residual_fusion(fusion_input)
+        return residual_pred  # [B, seq_len]
 
 
 class ANDWeibullModel(nn.Module):
     """PyTorch implementation of the single-client AND-Weibull net-load system."""
 
-    def __init__(self, seq_len=24, lstm_hidden_units=24):
+    def __init__(self, seq_len=48, lstm_hidden_units=48):
         super().__init__()
         self.seq_len = int(seq_len)
 
@@ -129,7 +167,7 @@ class ANDWeibullModel(nn.Module):
         self.trend_layer = nn.Linear(self.seq_len, self.seq_len)
         self.shape_layer = nn.Linear(self.seq_len * 2, self.seq_len)
 
-        # Autoencoder branch follows Table 1 under the paper setting 24 -> 12 -> 6 -> 12 -> 24.
+        # Autoencoder branch scales with seq_len, e.g. 48 -> 24 -> 12 -> 24 -> 48.
         ae_hidden = max(1, self.seq_len // 2)
         ae_bottleneck = max(1, self.seq_len // 4)
         self.encoder1 = nn.Linear(self.seq_len, ae_hidden)
@@ -153,7 +191,7 @@ class ANDWeibullModel(nn.Module):
 
     def _init_fourier_like_periodic_layer(self):
         # Fourier-like initialization from Appendix/Table description.
-        # omega_k / 24 keeps the first forward pass numerically steadier with global time_idx inputs.
+        # omega_k / seq_len keeps the first forward pass numerically steadier with global time_idx inputs.
         with torch.no_grad():
             weight = torch.zeros(self.seq_len, self.seq_len, dtype=torch.float32)
             for k in range(self.seq_len):
@@ -169,10 +207,10 @@ class ANDWeibullModel(nn.Module):
             self.a.fill_(1.0)
 
     def _shape_branch(self, x_cur, o_cur):
-        periodic = torch.sin(self.W0(o_cur) + self.Phi) * self.a  # [B, 24]
-        trend = self.trend_layer(x_cur)  # [B, 24]
-        shape_input = torch.cat([periodic, trend], dim=-1)  # [B, 48]
-        return self.shape_layer(shape_input)  # [B, 24]
+        periodic = torch.sin(self.W0(o_cur) + self.Phi) * self.a  # [B, seq_len]
+        trend = self.trend_layer(x_cur)  # [B, seq_len]
+        shape_input = torch.cat([periodic, trend], dim=-1)  # [B, 2 * seq_len]
+        return self.shape_layer(shape_input)  # [B, seq_len]
 
     def _autoencoder_branch(self, x_cur):
         z = torch.tanh(self.encoder1(x_cur))
@@ -229,15 +267,19 @@ def parse_args():
     )
     parser.add_argument(
         "--save-dir",
-        default="runs/and_weibull_netload_client1",
+        default="runs/and_weibull_netload_client1_ablation_f1_only_seq48",
         help="Directory for configs, checkpoints, logs, predictions, and plots.",
     )
-    parser.add_argument("--seq-len", type=int, default=24)
+    parser.add_argument("--seq-len", type=int, default=48)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--epochs", type=int, default=200)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--alpha", type=float, default=0.10)
-    parser.add_argument("--patience", type=int, default=3)
+    parser.add_argument("--patience", type=int, default=15)
+    parser.add_argument("--lstm-hidden-units", type=int, default=48)
+    parser.add_argument("--f1-weight", type=float, default=1.0)
+    parser.add_argument("--f2-weight", type=float, default=0.0)
+    parser.add_argument("--f3-weight", type=float, default=0.0)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--train-ratio", type=float, default=0.8)
     parser.add_argument("--val-ratio", type=float, default=0.1)
@@ -401,7 +443,16 @@ def finalize_meter(meter, sample_count):
     return {key: value / sample_count for key, value in meter.items()}
 
 
-def run_epoch(model, data_loader, device, alpha, optimizer=None):
+def run_epoch(
+    model,
+    data_loader,
+    device,
+    alpha,
+    f1_weight=1.0,
+    f2_weight=0.0,
+    f3_weight=0.0,
+    optimizer=None,
+):
     is_train = optimizer is not None
     model.train(is_train)
 
@@ -426,10 +477,10 @@ def run_epoch(model, data_loader, device, alpha, optimizer=None):
             # f3 trains the autoencoder reconstruction of the current window.
             f3_mse = F.mse_loss(ae_recon, x_cur)
 
-            # Equal weights for f1, f2, f3. A single backward pass over the sum is equivalent
-            # to computing each gradient separately and accumulating on shared parameters,
-            # matching Appendix D's unified backpropagation idea.
-            loss_total = f1_ste + f2_ste + f3_mse
+            # Ablation setting: keep f2/f3 in logs, but their default weights are 0.
+            # A single backward pass over this weighted sum still follows Appendix D's
+            # unified backpropagation idea for the losses that are enabled.
+            loss_total = f1_weight * f1_ste + f2_weight * f2_ste + f3_weight * f3_mse
 
             if is_train:
                 loss_total.backward()
@@ -498,7 +549,41 @@ def metrics_to_log_row(epoch, train_metrics, val_metrics):
 
 
 def save_training_log(logs, path):
-    pd.DataFrame(logs, columns=LOG_COLUMNS).to_csv(path, index=False, encoding="utf-8-sig")
+    log_df = pd.DataFrame(logs, columns=LOG_COLUMNS)
+    log_dir = os.path.dirname(path)
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
+
+    # Write through a temp file first. On Windows, CSV files opened by Excel or
+    # scanned by another process can briefly make direct overwrite fail.
+    temp_path = f"{path}.tmp"
+    try:
+        log_df.to_csv(temp_path, index=False, encoding="utf-8-sig")
+        os.replace(temp_path, path)
+        return path
+    except OSError as exc:
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
+
+        epoch = logs[-1].get("epoch", "unknown") if logs else "empty"
+        base, ext = os.path.splitext(path)
+        fallback_path = f"{base}_backup_epoch_{epoch}_pid_{os.getpid()}{ext or '.csv'}"
+        try:
+            log_df.to_csv(fallback_path, index=False, encoding="utf-8-sig")
+            print(
+                f"Warning: failed to update {path}: {exc}. "
+                f"Saved log backup to {fallback_path} and continued."
+            )
+            return fallback_path
+        except OSError as fallback_exc:
+            print(
+                f"Warning: failed to save training log to {path}: {exc}; "
+                f"fallback also failed: {fallback_exc}. Continuing training."
+            )
+            return None
 
 
 def save_checkpoint(path, model, config, epoch, val_total_loss):
@@ -674,7 +759,10 @@ def main():
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = ANDWeibullModel(seq_len=args.seq_len, lstm_hidden_units=24).to(device)
+    model = ANDWeibullModel(
+        seq_len=args.seq_len,
+        lstm_hidden_units=args.lstm_hidden_units,
+    ).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     config = {
@@ -695,9 +783,13 @@ def main():
         "val_ratio": args.val_ratio,
         "test_ratio": 1.0 - args.train_ratio - args.val_ratio,
         "lstm_input_size": 1,
-        "lstm_hidden_units": 24,
+        "lstm_hidden_units": args.lstm_hidden_units,
         "lstm_num_layers": 1,
-        "loss_weights": {"f1": 1.0, "f2": 1.0, "f3": 1.0},
+        "loss_weights": {
+            "f1": args.f1_weight,
+            "f2": args.f2_weight,
+            "f3": args.f3_weight,
+        },
         "split_info": split_info,
         "scaler": scaler_to_dict(scaler),
     }
@@ -733,6 +825,9 @@ def main():
             data_loader=train_loader,
             device=device,
             alpha=args.alpha,
+            f1_weight=args.f1_weight,
+            f2_weight=args.f2_weight,
+            f3_weight=args.f3_weight,
             optimizer=optimizer,
         )
         val_metrics = run_epoch(
@@ -740,6 +835,9 @@ def main():
             data_loader=val_loader,
             device=device,
             alpha=args.alpha,
+            f1_weight=args.f1_weight,
+            f2_weight=args.f2_weight,
+            f3_weight=args.f3_weight,
             optimizer=None,
         )
 
@@ -747,7 +845,6 @@ def main():
 
         row = metrics_to_log_row(epoch, train_metrics, val_metrics)
         logs.append(row)
-        save_training_log(logs, training_log_path)
 
         if val_metrics["total_loss"] < best_val_loss:
             best_val_loss = val_metrics["total_loss"]
@@ -756,6 +853,8 @@ def main():
             save_checkpoint(best_model_path, model, config, epoch, best_val_loss)
         else:
             no_improve_epochs += 1
+
+        save_training_log(logs, training_log_path)
 
         if args.patience > 0 and no_improve_epochs >= args.patience:
             print(
