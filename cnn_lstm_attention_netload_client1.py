@@ -62,41 +62,47 @@ class ModelConfig:
 
 
 class NetLoadNextStepDataset(Dataset):
-    """x uses the previous seq_len net-load values; y is the next time step."""
+    """x uses the previous seq_len net-load values; y is the next horizon time steps."""
 
-    def __init__(self, scaled_values, timestamps, seq_len):
+    def __init__(self, scaled_values, timestamps, seq_len, horizon):
         self.scaled_values = np.asarray(scaled_values, dtype=np.float32).reshape(-1)
         self.timestamps = np.asarray(timestamps)
         self.seq_len = int(seq_len)
+        self.horizon = int(horizon)
 
         if len(self.scaled_values) != len(self.timestamps):
             raise ValueError("scaled_values and timestamps must have the same length.")
+        if self.horizon <= 0:
+            raise ValueError("horizon must be positive.")
 
     def __len__(self):
-        return max(0, len(self.scaled_values) - self.seq_len)
+        return max(0, len(self.scaled_values) - self.seq_len - self.horizon + 1)
 
     def __getitem__(self, idx):
         x = self.scaled_values[idx : idx + self.seq_len].reshape(self.seq_len, 1)
-        y = self.scaled_values[idx + self.seq_len].reshape(1)
-        timestamp_target = str(self.timestamps[idx + self.seq_len])
+        y = self.scaled_values[idx + self.seq_len : idx + self.seq_len + self.horizon]
+        timestamp_target = "|".join(
+            str(ts) for ts in self.timestamps[idx + self.seq_len : idx + self.seq_len + self.horizon]
+        )
         return torch.from_numpy(x.copy()), torch.from_numpy(y.copy()), timestamp_target
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Local CNN-LSTM-Attention baseline for client-1 next-step net-load forecasting."
+        description="Local CNN-LSTM-Attention direct baseline for client-2 two-step net-load forecasting."
     )
     parser.add_argument(
         "--data-path",
-        default="per_client_merged/client_1_load_weather_30min.csv",
+        default="per_client_merged/client_2_load_weather_30min.csv",
         help="CSV path containing timestamp, gc, gg columns.",
     )
     parser.add_argument(
         "--save-dir",
-        default="runs/cnn_lstm_attention_netload_client1_seq48",
+        default="runs/cnn_lstm_attention_netload_client2_seq48_h2",
         help="Output directory.",
     )
     parser.add_argument("--seq-len", type=int, default=48)
+    parser.add_argument("--horizon", type=int, default=2)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--epochs", type=int, default=200)
     parser.add_argument("--lr", type=float, default=1e-3)
@@ -146,7 +152,7 @@ def scaler_to_dict(scaler):
     return result
 
 
-def load_and_prepare_data(data_path, seq_len, train_ratio, val_ratio):
+def load_and_prepare_data(data_path, seq_len, horizon, train_ratio, val_ratio):
     if not os.path.exists(data_path):
         raise FileNotFoundError(
             f"Data file not found: {data_path}. Please confirm --data-path."
@@ -173,8 +179,8 @@ def load_and_prepare_data(data_path, seq_len, train_ratio, val_ratio):
     if train_ratio <= 0 or val_ratio <= 0 or train_ratio + val_ratio >= 1:
         raise ValueError("train_ratio and val_ratio must be positive and sum to less than 1.")
 
-    if len(df) <= seq_len + 1:
-        raise ValueError(f"Not enough rows ({len(df)}) for seq_len={seq_len}.")
+    if len(df) <= seq_len + horizon:
+        raise ValueError(f"Not enough rows ({len(df)}) for seq_len={seq_len}, horizon={horizon}.")
 
     train_end = int(len(df) * train_ratio)
     val_end = int(len(df) * (train_ratio + val_ratio))
@@ -183,8 +189,10 @@ def load_and_prepare_data(data_path, seq_len, train_ratio, val_ratio):
     test_df = df.iloc[val_end:].copy()
 
     for split_name, split_df in [("train", train_df), ("val", val_df), ("test", test_df)]:
-        if len(split_df) <= seq_len:
-            raise ValueError(f"{split_name} split has only {len(split_df)} rows; seq_len={seq_len}.")
+        if len(split_df) <= seq_len + horizon - 1:
+            raise ValueError(
+                f"{split_name} split has only {len(split_df)} rows; seq_len={seq_len}, horizon={horizon}."
+            )
 
     scaler = make_scaler()
     train_scaled = scaler.fit_transform(train_df[["net_load"]].values).astype(np.float32).reshape(-1)
@@ -193,9 +201,9 @@ def load_and_prepare_data(data_path, seq_len, train_ratio, val_ratio):
     all_scaled = np.concatenate([train_scaled, val_scaled, test_scaled])
 
     datasets = {
-        "train": NetLoadNextStepDataset(train_scaled, train_df["timestamp"].values, seq_len),
-        "val": NetLoadNextStepDataset(val_scaled, val_df["timestamp"].values, seq_len),
-        "test": NetLoadNextStepDataset(test_scaled, test_df["timestamp"].values, seq_len),
+        "train": NetLoadNextStepDataset(train_scaled, train_df["timestamp"].values, seq_len, horizon),
+        "val": NetLoadNextStepDataset(val_scaled, val_df["timestamp"].values, seq_len, horizon),
+        "test": NetLoadNextStepDataset(test_scaled, test_df["timestamp"].values, seq_len, horizon),
     }
 
     split_info = {
@@ -281,11 +289,11 @@ def collect_predictions(model, loader, device):
         for x, y, ts in loader:
             x = x.to(device=device, dtype=torch.float32)
             pred = model(x)
-            preds.append(pred.cpu().numpy().reshape(-1))
-            trues.append(y.numpy().reshape(-1))
+            preds.append(pred.cpu().numpy())
+            trues.append(y.numpy())
             timestamps.extend(list(ts))
 
-    return np.concatenate(preds), np.concatenate(trues), np.asarray(timestamps)
+    return np.concatenate(preds, axis=0), np.concatenate(trues, axis=0), np.asarray(timestamps)
 
 
 def count_parameters(model):
@@ -328,14 +336,16 @@ def save_loss_curve(logs, path):
 
 
 def save_test_plot(path, y_true, y_pred, max_points=300):
+    y_true = np.asarray(y_true).reshape(-1)
+    y_pred = np.asarray(y_pred).reshape(-1)
     n = min(len(y_true), int(max_points))
     x_axis = np.arange(n)
     plt.figure(figsize=(11, 5))
-    plt.plot(x_axis, y_true[:n], label="True next-step net load")
-    plt.plot(x_axis, y_pred[:n], label="Predicted next-step net load")
+    plt.plot(x_axis, y_true[:n], label="True net load")
+    plt.plot(x_axis, y_pred[:n], label="Predicted net load")
     plt.xlabel("Test sample")
     plt.ylabel("Net load")
-    plt.title("CNN-LSTM-Attention Test Next-Step Prediction")
+    plt.title("CNN-LSTM-Attention Test Multi-Step Prediction")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
@@ -351,6 +361,7 @@ def main():
     df, datasets, scaler, split_info = load_and_prepare_data(
         args.data_path,
         seq_len=args.seq_len,
+        horizon=args.horizon,
         train_ratio=args.train_ratio,
         val_ratio=args.val_ratio,
     )
@@ -371,7 +382,7 @@ def main():
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = CNNLSTMModel(input_dim=1, output_dim=1, cfg=model_cfg).to(device)
+    model = CNNLSTMModel(input_dim=1, output_dim=args.horizon, cfg=model_cfg).to(device)
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
@@ -381,10 +392,11 @@ def main():
         "save_dir": args.save_dir,
         "save_dir_abs": os.path.abspath(args.save_dir),
         "feature_mode": args.feature_mode,
-        "target": "net_load_next_step",
+        "target": "net_load_multi_step_direct",
         "net_load_definition": "gc - gg",
         "seq_len": args.seq_len,
-        "horizon": 1,
+        "horizon": args.horizon,
+        "method": "direct_net_load",
         "batch_size": args.batch_size,
         "epochs": args.epochs,
         "learning_rate": args.lr,
@@ -462,30 +474,53 @@ def main():
     checkpoint = load_checkpoint(best_model_path, device)
     model.load_state_dict(checkpoint["model_state_dict"])
 
-    pred_scaled, true_scaled, timestamps = collect_predictions(model, test_loader, device)
-    pred_real = inverse_transform_1d(scaler, pred_scaled)
-    true_real = inverse_transform_1d(scaler, true_scaled)
+    pred_scaled, true_scaled, timestamps_joined = collect_predictions(model, test_loader, device)
+    pred_real = inverse_transform_1d(scaler, pred_scaled.reshape(-1)).reshape(pred_scaled.shape)
+    true_real = inverse_transform_1d(scaler, true_scaled.reshape(-1)).reshape(true_scaled.shape)
 
-    pred_df = pd.DataFrame(
-        {
-            "timestamp_target": timestamps,
-            "y_true_next_scaled": true_scaled,
-            "y_pred_next_scaled": pred_scaled,
-            "y_true_next": true_real,
-            "y_pred_next": pred_real,
-        }
-    )
+    pred_data = {}
+    timestamp_steps = [str(ts).split("|") for ts in timestamps_joined]
+    for step in range(args.horizon):
+        pred_data[f"timestamp_step_{step + 1}"] = [
+            ts_parts[step] if step < len(ts_parts) else "" for ts_parts in timestamp_steps
+        ]
+        pred_data[f"y_true_step_{step + 1}_scaled"] = true_scaled[:, step]
+        pred_data[f"y_pred_step_{step + 1}_scaled"] = pred_scaled[:, step]
+        pred_data[f"y_true_step_{step + 1}"] = true_real[:, step]
+        pred_data[f"y_pred_step_{step + 1}"] = pred_real[:, step]
+    pred_df = pd.DataFrame(pred_data)
     pred_df.to_csv(os.path.join(args.save_dir, "test_predictions.csv"), index=False, encoding="utf-8-sig")
 
-    test_metrics = compute_metrics(true_real, pred_real)
-    metrics_row = {"N": int(len(true_real))}
+    long_rows = []
+    for sample_idx in range(pred_scaled.shape[0]):
+        for step in range(args.horizon):
+            long_rows.append(
+                {
+                    "sample_index": int(sample_idx),
+                    "step": int(step + 1),
+                    "timestamp": pred_data[f"timestamp_step_{step + 1}"][sample_idx],
+                    "y_true_scaled": float(true_scaled[sample_idx, step]),
+                    "y_pred_scaled": float(pred_scaled[sample_idx, step]),
+                    "y_true": float(true_real[sample_idx, step]),
+                    "y_pred": float(pred_real[sample_idx, step]),
+                }
+            )
+    long_pred_df = pd.DataFrame(long_rows)
+    long_pred_df.to_csv(os.path.join(args.save_dir, "test_predictions_long.csv"), index=False, encoding="utf-8-sig")
+
+    test_metrics = compute_metrics(true_real.reshape(-1), pred_real.reshape(-1))
+    metrics_row = {"N": int(true_real.size), "horizon": int(args.horizon)}
     metrics_row.update(test_metrics)
+    for step in range(args.horizon):
+        step_metrics = compute_metrics(true_real[:, step], pred_real[:, step])
+        for key, value in step_metrics.items():
+            metrics_row[f"step_{step + 1}_{key}"] = value
     pd.DataFrame([metrics_row]).to_csv(
         os.path.join(args.save_dir, "test_metrics.csv"),
         index=False,
         encoding="utf-8-sig",
     )
-    save_test_plot(os.path.join(args.save_dir, "test_prediction_next_step.png"), true_real, pred_real)
+    save_test_plot(os.path.join(args.save_dir, "test_prediction_multi_step.png"), true_real, pred_real)
 
     print(f"Final best validation MSE loss: {best_val_loss:.6f} (epoch {best_epoch})")
     print(
