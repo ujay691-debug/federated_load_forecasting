@@ -1,0 +1,188 @@
+{
+  "client_id": 2,
+  "client_name": "client_2",
+  "csv_path": "C:\\Users\\hhu\\Documents\\Codex\\2026-06-01\\files-mentioned-by-the-user-dd274e1162e291b6bc097f564196312a\\federated_load_forecasting_clean\\per_client_merged\\client_2_load_weather_30min.csv",
+  "csv_path_abs": "C:\\Users\\hhu\\Documents\\Codex\\2026-06-01\\files-mentioned-by-the-user-dd274e1162e291b6bc097f564196312a\\federated_load_forecasting_clean\\per_client_merged\\client_2_load_weather_30min.csv",
+  "output_dir": "C:\\Users\\hhu\\Documents\\Codex\\2026-06-01\\files-mentioned-by-the-user-dd274e1162e291b6bc097f564196312a\\federated_load_forecasting_clean\\runs\\weather_aware_additive_ae_shift_ste_free_resid_event_expert\\client_2",
+  "target": "net_load if present else gc - gg",
+  "input_policy": {
+    "history": "past net_load, time scalar, weather, and time encodings",
+    "shift_exogenous": "weather_shift and time_enc_shift may include t+1 weather/time; no future net_load/gc/gg inputs",
+    "weather_branch_policy": "Rw branch uses base_resid_hist and weather only; time encodings are not used by the weather residual branch",
+    "future_weather_assumption": "perfect known future weather or available weather forecast",
+    "model_output": "Shape + FreeResidual + EventExpertCorrection",
+    "no_user_residual": true,
+    "daylight_gate_on_residual": false,
+    "event_expert": true,
+    "weighted_ste": false,
+    "event_weighted_next_loss": true
+  },
+  "training": {
+    "epochs": 60,
+    "batch_size": 256,
+    "lr": 0.001,
+    "patience": 10,
+    "seq_len": 48,
+    "horizon": 1,
+    "seed": 2024,
+    "device": "cuda",
+    "optimizer": "Adam",
+    "early_stop": "validation RMSE of y_shift[:, -1, :] in original net_load scale",
+    "grad_clip": 1.0,
+    "loss_formula": "lambda_ste * (alpha_ste * Fourier + (1 - alpha_ste) * MSE_seq) + lambda_next * EventWeightedMSE_last_step + lambda_event_corr * EventResidualCorrection + lambda_event_gate * BCE(event_gate, event_mask) + lambda_event_normal * NormalSuppression",
+    "lambda_next": 1.0,
+    "lambda_ste": 1.0,
+    "alpha_ste": 0.1,
+    "lambda_trend_smooth": 0.0,
+    "lambda_ae_y": 0.0,
+    "lambda_ae_resid": 0.0,
+    "lambda_ru_mean": 0.0,
+    "lambda_rw_ae": 0.0,
+    "lambda_event_corr": 0.1,
+    "lambda_event_gate": 0.02,
+    "lambda_event_normal": 0.01,
+    "event_weight_beta": 2.0,
+    "user_resid_scale": 0.3,
+    "user_day_scale": 0.5,
+    "detach_user_resid_input": true,
+    "detach_event_base_error": true,
+    "component_eval_every": 1,
+    "component_sample_n": 300,
+    "plot_n": 500
+  },
+  "experiment_config": {
+    "seq_len": 48,
+    "horizon": 1,
+    "train_ratio": 0.8,
+    "val_ratio": 0.1,
+    "ghi_threshold": 10.0,
+    "smooth_k": 3,
+    "lambda_next": 1.0,
+    "lambda_ste": 1.0,
+    "alpha_ste": 0.1,
+    "lambda_trend_smooth": 0.0,
+    "lambda_ae_y": 0.0,
+    "lambda_ae_resid": 0.0,
+    "lambda_ru_mean": 0.0,
+    "lambda_rw_ae": 0.0,
+    "user_resid_scale": 0.3,
+    "user_day_scale": 0.5,
+    "detach_user_resid_input": true,
+    "num_basis": 48,
+    "ae_y_hidden": 24,
+    "ae_y_bottleneck": 12,
+    "ae_resid_hidden": 16,
+    "ae_resid_bottleneck": 8,
+    "weather_resid_ae_hidden": 16,
+    "weather_resid_ae_bottleneck": 8,
+    "weather_conv1_channels": 32,
+    "weather_conv2_channels": 64,
+    "weather_kernel": 3,
+    "weather_lstm_hidden1": 32,
+    "weather_lstm_hidden2": 16,
+    "weather_attn_units": 20,
+    "user_weibull_lstm_hidden": 16,
+    "user_weibull_fc_hidden": 8,
+    "fc_hidden": 16,
+    "dropout": 0.0,
+    "use_event_expert": true,
+    "event_expert_hidden": 16,
+    "event_gate_hidden": 16,
+    "lambda_event_corr": 0.1,
+    "lambda_event_gate": 0.02,
+    "lambda_event_normal": 0.01,
+    "event_weight_beta": 2.0,
+    "event_ramp_quantile": 0.8,
+    "event_ghi_quantile": 0.8,
+    "event_peak_quantile": 0.8,
+    "event_tau_ramp": 0.05,
+    "event_tau_ghi": 0.05,
+    "event_tau_zero": 0.05,
+    "event_tau_peak": 0.05,
+    "event_zero_eps": 0.05,
+    "detach_event_base_error": true
+  },
+  "event_thresholds": {
+    "event_ramp_threshold": 0.04927515983581543,
+    "event_ghi_threshold": 0.05660736560821533,
+    "event_peak_threshold": 0.4503308892250062
+  },
+  "split_info": {
+    "raw_rows": 52557,
+    "clean_rows": 52557,
+    "train_rows": 42045,
+    "val_rows": 5256,
+    "test_rows": 5256,
+    "train_samples": 41997,
+    "val_samples": 5208,
+    "test_samples": 5208,
+    "temp_source": "temp2m_c"
+  },
+  "scalers": {
+    "y_scaler": {
+      "type": "MinMaxScaler",
+      "data_min": [
+        -11.393999999999998
+      ],
+      "data_max": [
+        40.133
+      ],
+      "data_range": [
+        51.527
+      ],
+      "scale": [
+        0.019407301026646225
+      ],
+      "min": [
+        0.22112678789760706
+      ]
+    },
+    "raw_weather_scaler": {
+      "type": "MinMaxScaler",
+      "data_min": [
+        0.0,
+        6.736663818359375,
+        0.0388734862208366
+      ],
+      "data_max": [
+        1102.71875,
+        37.831573486328125,
+        12.948960304260254
+      ],
+      "data_range": [
+        1102.71875,
+        31.09490966796875,
+        12.910086818039417
+      ],
+      "scale": [
+        0.0009068495479921784,
+        0.03215960460017391,
+        0.07745881294947514
+      ],
+      "min": [
+        0.0,
+        -0.2166484447227353,
+        -0.0030110940978737813
+      ]
+    },
+    "ramp_scaler": {
+      "type": "MinMaxScaler",
+      "data_min": [
+        -282.3281944444444
+      ],
+      "data_max": [
+        210.1875
+      ],
+      "data_range": [
+        492.5156944444444
+      ],
+      "scale": [
+        0.0020303921505039463
+      ],
+      "min": [
+        0.5732369498659519
+      ]
+    }
+  },
+  "model_parameter_count": 30211
+}

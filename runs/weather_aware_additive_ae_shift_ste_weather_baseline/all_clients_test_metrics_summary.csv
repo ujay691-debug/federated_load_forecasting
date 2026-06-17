@@ -1,0 +1,2 @@
+﻿client_id,client_name,client_dir,best_epoch,best_val_RMSE,test_loss,MAE,MSE,RMSE,MAPE_percent,R2
+2,client_2,C:\Users\hhu\Documents\Codex\2026-06-01\files-mentioned-by-the-user-dd274e1162e291b6bc097f564196312a\federated_load_forecasting_clean\runs\weather_aware_additive_ae_shift_ste_weather_baseline\client_2,41,1.4687650172288584,0.0011934525974970397,1.1341813447075564,2.466282786837339,1.5704403162289673,84.4757948088937,0.9404511990917159

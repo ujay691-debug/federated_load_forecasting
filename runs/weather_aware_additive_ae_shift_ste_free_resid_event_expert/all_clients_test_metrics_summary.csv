@@ -1,0 +1,2 @@
+﻿client_id,client_name,client_dir,best_epoch,best_val_RMSE,test_loss,MAE,MSE,RMSE,MAPE_percent,R2
+2,client_2,C:\Users\hhu\Documents\Codex\2026-06-01\files-mentioned-by-the-user-dd274e1162e291b6bc097f564196312a\federated_load_forecasting_clean\runs\weather_aware_additive_ae_shift_ste_free_resid_event_expert\client_2,47,1.447674933222059,0.0035312570997738436,1.0969246360722638,2.314331012629536,1.5212925466949268,61.07908497688116,0.9441200995107001
