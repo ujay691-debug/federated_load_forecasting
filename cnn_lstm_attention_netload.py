@@ -22,6 +22,15 @@ except ImportError:
     MinMaxScaler = None
 
 
+EXPERIMENT_NAME = "cnn-lstm-本地预测-1"
+FEATURE_TO_COLUMN = {
+    "net_load": "net_load",
+    "ghi": "ghi_wm2",
+    "temperature": "temp_c",
+    "wind": "wind10m_ms",
+}
+
+
 class SimpleMinMaxScaler:
     """Small fallback for environments without sklearn."""
 
@@ -62,25 +71,32 @@ class ModelConfig:
 
 
 class NetLoadNextStepDataset(Dataset):
-    """x uses the previous seq_len net-load values; y is the next horizon time steps."""
+    """Historical multivariate inputs with future net-load targets."""
 
-    def __init__(self, scaled_values, timestamps, seq_len, horizon):
-        self.scaled_values = np.asarray(scaled_values, dtype=np.float32).reshape(-1)
+    def __init__(self, scaled_features, scaled_target, timestamps, seq_len, horizon):
+        self.scaled_features = np.asarray(scaled_features, dtype=np.float32)
+        self.scaled_target = np.asarray(scaled_target, dtype=np.float32).reshape(-1)
         self.timestamps = np.asarray(timestamps)
         self.seq_len = int(seq_len)
         self.horizon = int(horizon)
 
-        if len(self.scaled_values) != len(self.timestamps):
-            raise ValueError("scaled_values and timestamps must have the same length.")
+        if self.scaled_features.ndim != 2:
+            raise ValueError("scaled_features must have shape [N, input_dim].")
+        if not (
+            len(self.scaled_features) == len(self.scaled_target) == len(self.timestamps)
+        ):
+            raise ValueError(
+                "scaled_features, scaled_target, and timestamps must have the same length."
+            )
         if self.horizon <= 0:
             raise ValueError("horizon must be positive.")
 
     def __len__(self):
-        return max(0, len(self.scaled_values) - self.seq_len - self.horizon + 1)
+        return max(0, len(self.scaled_target) - self.seq_len - self.horizon + 1)
 
     def __getitem__(self, idx):
-        x = self.scaled_values[idx : idx + self.seq_len].reshape(self.seq_len, 1)
-        y = self.scaled_values[idx + self.seq_len : idx + self.seq_len + self.horizon]
+        x = self.scaled_features[idx : idx + self.seq_len]
+        y = self.scaled_target[idx + self.seq_len : idx + self.seq_len + self.horizon]
         timestamp_target = "|".join(
             str(ts) for ts in self.timestamps[idx + self.seq_len : idx + self.seq_len + self.horizon]
         )
@@ -89,32 +105,37 @@ class NetLoadNextStepDataset(Dataset):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Local CNN-LSTM-Attention direct baseline for client-2 two-step net-load forecasting."
+        description="CNN-LSTM local net-load forecasting with configurable historical inputs."
     )
     parser.add_argument(
         "--data-path",
-        default="per_client_merged/client_2_load_weather_30min.csv",
-        help="CSV path containing timestamp, gc, gg columns.",
+        default="per_client_merged/client_1_load_weather_30min.csv",
+        help="CSV path containing load and any selected weather columns.",
     )
     parser.add_argument(
         "--save-dir",
-        default="runs/cnn_lstm_attention_netload_client2_seq48_h2",
+        default=os.path.join("runs", EXPERIMENT_NAME),
         help="Output directory.",
     )
     parser.add_argument("--seq-len", type=int, default=48)
-    parser.add_argument("--horizon", type=int, default=2)
-    parser.add_argument("--batch-size", type=int, default=256)
-    parser.add_argument("--epochs", type=int, default=200)
+    parser.add_argument("--horizon", type=int, default=1)
+    parser.add_argument("--batch-size", type=int, default=512)
+    parser.add_argument("--epochs", type=int, default=60)
     parser.add_argument("--lr", type=float, default=1e-3)
-    parser.add_argument("--patience", type=int, default=3)
+    parser.add_argument("--patience", type=int, default=6)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--train-ratio", type=float, default=0.8)
     parser.add_argument("--val-ratio", type=float, default=0.1)
     parser.add_argument(
-        "--feature-mode",
-        default="net_load_only",
-        choices=["net_load_only"],
-        help="Reserved switch; this baseline currently uses only net-load history.",
+        "--input-features",
+        nargs="+",
+        choices=list(FEATURE_TO_COLUMN),
+        default=["net_load", "ghi", "temperature", "wind"],
+        metavar="FEATURE",
+        help=(
+            "Historical inputs. Available: net_load, ghi, temperature, wind. "
+            "Default uses all four features."
+        ),
     )
     parser.add_argument("--conv1-channels", type=int, default=32)
     parser.add_argument("--conv2-channels", type=int, default=64)
@@ -152,7 +173,26 @@ def scaler_to_dict(scaler):
     return result
 
 
-def load_and_prepare_data(data_path, seq_len, horizon, train_ratio, val_ratio):
+def resolve_input_features(input_features):
+    feature_names = list(input_features)
+    if not feature_names:
+        raise ValueError("At least one --input-features value is required.")
+    if len(feature_names) != len(set(feature_names)):
+        raise ValueError(f"Duplicate input features are not allowed: {feature_names}")
+    unknown = sorted(set(feature_names).difference(FEATURE_TO_COLUMN))
+    if unknown:
+        raise ValueError(f"Unsupported input features: {', '.join(unknown)}")
+    return feature_names, [FEATURE_TO_COLUMN[name] for name in feature_names]
+
+
+def load_and_prepare_data(
+    data_path,
+    seq_len,
+    horizon,
+    train_ratio,
+    val_ratio,
+    input_features,
+):
     if not os.path.exists(data_path):
         raise FileNotFoundError(
             f"Data file not found: {data_path}. Please confirm --data-path."
@@ -160,20 +200,46 @@ def load_and_prepare_data(data_path, seq_len, horizon, train_ratio, val_ratio):
 
     df = pd.read_csv(data_path)
     raw_rows = len(df)
+    feature_names, input_columns = resolve_input_features(input_features)
     required = {"timestamp", "gc", "gg"}
+    if "ghi" in feature_names:
+        required.add("ghi_wm2")
+    if "wind" in feature_names:
+        required.add("wind10m_ms")
     missing = sorted(required.difference(df.columns))
     if missing:
         raise ValueError(f"CSV is missing required columns: {', '.join(missing)}.")
+    if "temperature" in feature_names and not {
+        "temp2m_c",
+        "temp2m_k",
+    }.intersection(df.columns):
+        raise ValueError(
+            "Temperature input requires temp2m_c or temp2m_k in the CSV."
+        )
 
     df = df.copy()
     df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
     df["gc"] = pd.to_numeric(df["gc"], errors="coerce")
     df["gg"] = pd.to_numeric(df["gg"], errors="coerce")
-    df = df.dropna(subset=["timestamp", "gc", "gg"])
-    df = df.sort_values("timestamp").reset_index(drop=True)
-
-    # Net load is the only input feature and the prediction target.
     df["net_load"] = df["gc"] - df["gg"]
+
+    if "ghi" in feature_names:
+        df["ghi_wm2"] = pd.to_numeric(df["ghi_wm2"], errors="coerce")
+    if "wind" in feature_names:
+        df["wind10m_ms"] = pd.to_numeric(df["wind10m_ms"], errors="coerce")
+    temperature_source = None
+    if "temperature" in feature_names:
+        if "temp2m_c" in df.columns:
+            df["temp_c"] = pd.to_numeric(df["temp2m_c"], errors="coerce")
+            temperature_source = "temp2m_c"
+        else:
+            df["temp_c"] = pd.to_numeric(df["temp2m_k"], errors="coerce") - 273.15
+            temperature_source = "temp2m_k_minus_273.15"
+
+    clean_columns = ["timestamp", "gc", "gg", "net_load", *input_columns]
+    clean_columns = list(dict.fromkeys(clean_columns))
+    df = df.dropna(subset=clean_columns)
+    df = df.sort_values("timestamp").reset_index(drop=True)
     df["time_idx"] = np.arange(len(df), dtype=np.int64)
 
     if train_ratio <= 0 or val_ratio <= 0 or train_ratio + val_ratio >= 1:
@@ -194,16 +260,52 @@ def load_and_prepare_data(data_path, seq_len, horizon, train_ratio, val_ratio):
                 f"{split_name} split has only {len(split_df)} rows; seq_len={seq_len}, horizon={horizon}."
             )
 
-    scaler = make_scaler()
-    train_scaled = scaler.fit_transform(train_df[["net_load"]].values).astype(np.float32).reshape(-1)
-    val_scaled = scaler.transform(val_df[["net_load"]].values).astype(np.float32).reshape(-1)
-    test_scaled = scaler.transform(test_df[["net_load"]].values).astype(np.float32).reshape(-1)
-    all_scaled = np.concatenate([train_scaled, val_scaled, test_scaled])
+    feature_scaler = make_scaler()
+    target_scaler = make_scaler()
+    train_features_scaled = feature_scaler.fit_transform(
+        train_df[input_columns].values
+    ).astype(np.float32)
+    val_features_scaled = feature_scaler.transform(
+        val_df[input_columns].values
+    ).astype(np.float32)
+    test_features_scaled = feature_scaler.transform(
+        test_df[input_columns].values
+    ).astype(np.float32)
+    train_target_scaled = target_scaler.fit_transform(
+        train_df[["net_load"]].values
+    ).astype(np.float32).reshape(-1)
+    val_target_scaled = target_scaler.transform(
+        val_df[["net_load"]].values
+    ).astype(np.float32).reshape(-1)
+    test_target_scaled = target_scaler.transform(
+        test_df[["net_load"]].values
+    ).astype(np.float32).reshape(-1)
+    all_target_scaled = np.concatenate(
+        [train_target_scaled, val_target_scaled, test_target_scaled]
+    )
 
     datasets = {
-        "train": NetLoadNextStepDataset(train_scaled, train_df["timestamp"].values, seq_len, horizon),
-        "val": NetLoadNextStepDataset(val_scaled, val_df["timestamp"].values, seq_len, horizon),
-        "test": NetLoadNextStepDataset(test_scaled, test_df["timestamp"].values, seq_len, horizon),
+        "train": NetLoadNextStepDataset(
+            train_features_scaled,
+            train_target_scaled,
+            train_df["timestamp"].values,
+            seq_len,
+            horizon,
+        ),
+        "val": NetLoadNextStepDataset(
+            val_features_scaled,
+            val_target_scaled,
+            val_df["timestamp"].values,
+            seq_len,
+            horizon,
+        ),
+        "test": NetLoadNextStepDataset(
+            test_features_scaled,
+            test_target_scaled,
+            test_df["timestamp"].values,
+            seq_len,
+            horizon,
+        ),
     }
 
     split_info = {
@@ -215,12 +317,31 @@ def load_and_prepare_data(data_path, seq_len, horizon, train_ratio, val_ratio):
         "train_samples": int(len(datasets["train"])),
         "val_samples": int(len(datasets["val"])),
         "test_samples": int(len(datasets["test"])),
-        "train_scaled_min": float(np.min(train_scaled)),
-        "train_scaled_max": float(np.max(train_scaled)),
-        "all_scaled_min": float(np.min(all_scaled)),
-        "all_scaled_max": float(np.max(all_scaled)),
+        "input_feature_names": feature_names,
+        "input_columns": input_columns,
+        "input_dim": int(len(input_columns)),
+        "temperature_source": temperature_source,
+        "train_target_scaled_min": float(np.min(train_target_scaled)),
+        "train_target_scaled_max": float(np.max(train_target_scaled)),
+        "all_target_scaled_min": float(np.min(all_target_scaled)),
+        "all_target_scaled_max": float(np.max(all_target_scaled)),
+        "train_feature_scaled_min": {
+            name: float(train_features_scaled[:, idx].min())
+            for idx, name in enumerate(feature_names)
+        },
+        "train_feature_scaled_max": {
+            name: float(train_features_scaled[:, idx].max())
+            for idx, name in enumerate(feature_names)
+        },
     }
-    return df, datasets, scaler, split_info
+    return (
+        df,
+        datasets,
+        target_scaler,
+        feature_scaler,
+        split_info,
+        input_columns,
+    )
 
 
 def run_epoch(model, loader, device, criterion, optimizer=None):
@@ -327,7 +448,7 @@ def save_loss_curve(logs, path):
     plt.plot(log_df["epoch"], log_df["val_mse_loss"], label="Validation MSE loss")
     plt.xlabel("Epoch")
     plt.ylabel("Scaled-space MSE")
-    plt.title("CNN-LSTM-Attention Train/Validation Loss")
+    plt.title("CNN-LSTM Local Forecast Train/Validation Loss")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
@@ -335,7 +456,13 @@ def save_loss_curve(logs, path):
     plt.close()
 
 
-def save_test_plot(path, y_true, y_pred, max_points=300):
+def save_test_plot(
+    path,
+    y_true,
+    y_pred,
+    max_points=300,
+    title="CNN-LSTM Local Forecast Test Prediction",
+):
     y_true = np.asarray(y_true).reshape(-1)
     y_pred = np.asarray(y_pred).reshape(-1)
     n = min(len(y_true), int(max_points))
@@ -345,7 +472,7 @@ def save_test_plot(path, y_true, y_pred, max_points=300):
     plt.plot(x_axis, y_pred[:n], label="Predicted net load")
     plt.xlabel("Test sample")
     plt.ylabel("Net load")
-    plt.title("CNN-LSTM-Attention Test Multi-Step Prediction")
+    plt.title(title)
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
@@ -353,20 +480,167 @@ def save_test_plot(path, y_true, y_pred, max_points=300):
     plt.close()
 
 
+def save_random_train_7day_evaluations(
+    save_dir,
+    target_scaler,
+    pred_scaled,
+    true_scaled,
+    timestamps_joined,
+    seed,
+    num_windows=3,
+    days=7,
+):
+    """Save reproducible random, timestamp-continuous training windows.
+
+    The first forecast step is used when horizon > 1, so adjacent samples map
+    to adjacent target timestamps without overlapping forecast steps.
+    """
+
+    pred_scaled = np.asarray(pred_scaled, dtype=np.float32)
+    true_scaled = np.asarray(true_scaled, dtype=np.float32)
+    if pred_scaled.ndim != 2 or true_scaled.ndim != 2:
+        raise ValueError("Training predictions and targets must have shape [N, horizon].")
+    if pred_scaled.shape != true_scaled.shape:
+        raise ValueError("Training prediction and target shapes do not match.")
+
+    first_timestamps = np.asarray(
+        [str(value).split("|")[0] for value in timestamps_joined], dtype=object
+    )
+    parsed_timestamps = pd.to_datetime(first_timestamps, errors="coerce")
+    if parsed_timestamps.isna().any():
+        raise ValueError("Cannot parse one or more training target timestamps.")
+    if len(parsed_timestamps) < 2:
+        raise ValueError("Not enough training predictions to infer sampling frequency.")
+
+    timestamps_ns = parsed_timestamps.astype("int64").to_numpy()
+    diffs_ns = np.diff(timestamps_ns)
+    positive_diffs = diffs_ns[diffs_ns > 0]
+    if positive_diffs.size == 0:
+        raise ValueError("Training target timestamps are not increasing.")
+    step_ns = int(np.median(positive_diffs))
+    day_ns = 24 * 60 * 60 * 1_000_000_000
+    points_per_day = int(round(day_ns / step_ns))
+    if points_per_day <= 0 or not np.isclose(
+        points_per_day * step_ns, day_ns, rtol=0.0, atol=1_000_000
+    ):
+        raise ValueError(
+            f"Sampling interval {pd.to_timedelta(step_ns, unit='ns')} does not divide one day."
+        )
+    window_size = int(days) * points_per_day
+    if len(parsed_timestamps) < window_size:
+        raise ValueError(
+            f"Training predictions contain {len(parsed_timestamps)} points, "
+            f"fewer than the required {window_size} for {days} days."
+        )
+
+    # A valid start has exactly the inferred interval between every adjacent
+    # target timestamp in the complete seven-day window.
+    bad_step = (diffs_ns != step_ns).astype(np.int64)
+    bad_prefix = np.concatenate([[0], np.cumsum(bad_step)])
+    candidate_starts = np.arange(len(parsed_timestamps) - window_size + 1)
+    bad_counts = (
+        bad_prefix[candidate_starts + window_size - 1]
+        - bad_prefix[candidate_starts]
+    )
+    valid_starts = candidate_starts[bad_counts == 0]
+    if len(valid_starts) < int(num_windows):
+        raise ValueError(
+            f"Only {len(valid_starts)} continuous {days}-day training windows are available; "
+            f"cannot sample {num_windows}."
+        )
+
+    rng = np.random.default_rng(int(seed))
+    selected_starts = rng.choice(valid_starts, size=int(num_windows), replace=False)
+    pred_step_scaled = pred_scaled[:, 0]
+    true_step_scaled = true_scaled[:, 0]
+    pred_step_real = inverse_transform_1d(target_scaler, pred_step_scaled)
+    true_step_real = inverse_transform_1d(target_scaler, true_step_scaled)
+
+    prediction_frames = []
+    metric_rows = []
+    for selection_id, start in enumerate(selected_starts, start=1):
+        start = int(start)
+        end = start + window_size
+        window_true = true_step_real[start:end]
+        window_pred = pred_step_real[start:end]
+        start_timestamp = str(first_timestamps[start])
+        end_timestamp = str(first_timestamps[end - 1])
+        metric_rows.append(
+            {
+                "selection_id": selection_id,
+                "sample_start_index": start,
+                "sample_end_index": end - 1,
+                "start_timestamp": start_timestamp,
+                "end_timestamp": end_timestamp,
+                "days": int(days),
+                "N": int(window_size),
+                **compute_metrics(window_true, window_pred),
+            }
+        )
+        prediction_frames.append(
+            pd.DataFrame(
+                {
+                    "selection_id": selection_id,
+                    "sample_index": np.arange(start, end),
+                    "timestamp": first_timestamps[start:end],
+                    "y_true_scaled": true_step_scaled[start:end],
+                    "y_pred_scaled": pred_step_scaled[start:end],
+                    "y_true": window_true,
+                    "y_pred": window_pred,
+                }
+            )
+        )
+        save_test_plot(
+            os.path.join(
+                save_dir, f"train_random_7day_prediction_{selection_id}.png"
+            ),
+            window_true,
+            window_pred,
+            max_points=window_size,
+            title=(
+                f"Train Random 7-Day Window {selection_id}: "
+                f"{start_timestamp} to {end_timestamp}"
+            ),
+        )
+
+    pd.concat(prediction_frames, ignore_index=True).to_csv(
+        os.path.join(save_dir, "train_random_7day_predictions.csv"),
+        index=False,
+        encoding="utf-8-sig",
+    )
+    pd.DataFrame(metric_rows).to_csv(
+        os.path.join(save_dir, "train_random_7day_metrics.csv"),
+        index=False,
+        encoding="utf-8-sig",
+    )
+    return metric_rows
+
+
 def main():
     args = parse_args()
     set_seed(args.seed)
     os.makedirs(args.save_dir, exist_ok=True)
 
-    df, datasets, scaler, split_info = load_and_prepare_data(
+    (
+        df,
+        datasets,
+        target_scaler,
+        feature_scaler,
+        split_info,
+        input_columns,
+    ) = load_and_prepare_data(
         args.data_path,
         seq_len=args.seq_len,
         horizon=args.horizon,
         train_ratio=args.train_ratio,
         val_ratio=args.val_ratio,
+        input_features=args.input_features,
     )
 
     train_loader = DataLoader(datasets["train"], batch_size=args.batch_size, shuffle=True)
+    train_eval_loader = DataLoader(
+        datasets["train"], batch_size=args.batch_size, shuffle=False
+    )
     val_loader = DataLoader(datasets["val"], batch_size=args.batch_size, shuffle=False)
     test_loader = DataLoader(datasets["test"], batch_size=args.batch_size, shuffle=False)
 
@@ -382,21 +656,29 @@ def main():
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = CNNLSTMModel(input_dim=1, output_dim=args.horizon, cfg=model_cfg).to(device)
+    model = CNNLSTMModel(
+        input_dim=len(input_columns),
+        output_dim=args.horizon,
+        cfg=model_cfg,
+    ).to(device)
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     config = {
+        "experiment_name": EXPERIMENT_NAME,
         "data_path": args.data_path,
         "data_path_abs": os.path.abspath(args.data_path),
         "save_dir": args.save_dir,
         "save_dir_abs": os.path.abspath(args.save_dir),
-        "feature_mode": args.feature_mode,
+        "input_feature_names": list(args.input_features),
+        "input_columns": input_columns,
+        "input_dim": int(len(input_columns)),
+        "input_policy": "historical sequences only; no future weather or future net_load inputs",
         "target": "net_load_multi_step_direct",
         "net_load_definition": "gc - gg",
         "seq_len": args.seq_len,
         "horizon": args.horizon,
-        "method": "direct_net_load",
+        "method": EXPERIMENT_NAME,
         "batch_size": args.batch_size,
         "epochs": args.epochs,
         "learning_rate": args.lr,
@@ -409,7 +691,16 @@ def main():
         "test_ratio": 1.0 - args.train_ratio - args.val_ratio,
         "model": asdict(model_cfg),
         "split_info": split_info,
-        "scaler": scaler_to_dict(scaler),
+        "target_scaler": scaler_to_dict(target_scaler),
+        "feature_scaler": scaler_to_dict(feature_scaler),
+        "train_random_window_evaluation": {
+            "enabled": True,
+            "days_per_window": 7,
+            "num_random_windows": 3,
+            "random_seed": args.seed,
+            "forecast_step": 1,
+            "requires_continuous_timestamps": True,
+        },
     }
 
     with open(os.path.join(args.save_dir, "config.json"), "w", encoding="utf-8") as f:
@@ -421,10 +712,14 @@ def main():
         f"{split_info['train_samples']}, {split_info['val_samples']}, {split_info['test_samples']}"
     )
     print(
-        "net_load scaled range: "
-        f"train=[{split_info['train_scaled_min']:.6f}, {split_info['train_scaled_max']:.6f}], "
-        f"all=[{split_info['all_scaled_min']:.6f}, {split_info['all_scaled_max']:.6f}]"
+        "net_load target scaled range: "
+        f"train=[{split_info['train_target_scaled_min']:.6f}, "
+        f"{split_info['train_target_scaled_max']:.6f}], "
+        f"all=[{split_info['all_target_scaled_min']:.6f}, "
+        f"{split_info['all_target_scaled_max']:.6f}]"
     )
+    print(f"Input features: {args.input_features} -> columns {input_columns}")
+    print(f"Model input dimension: {len(input_columns)}")
     print(f"Model parameters: {count_parameters(model)}")
     print(f"Device: {device}")
 
@@ -474,9 +769,33 @@ def main():
     checkpoint = load_checkpoint(best_model_path, device)
     model.load_state_dict(checkpoint["model_state_dict"])
 
+    train_pred_scaled, train_true_scaled, train_timestamps = collect_predictions(
+        model, train_eval_loader, device
+    )
+    train_window_metrics = save_random_train_7day_evaluations(
+        save_dir=args.save_dir,
+        target_scaler=target_scaler,
+        pred_scaled=train_pred_scaled,
+        true_scaled=train_true_scaled,
+        timestamps_joined=train_timestamps,
+        seed=args.seed,
+        num_windows=3,
+        days=7,
+    )
+    for row in train_window_metrics:
+        print(
+            f"Train random 7-day window {row['selection_id']}: "
+            f"{row['start_timestamp']} to {row['end_timestamp']} | "
+            f"MAE={row['MAE']:.6f}, RMSE={row['RMSE']:.6f}, R2={row['R2']:.6f}"
+        )
+
     pred_scaled, true_scaled, timestamps_joined = collect_predictions(model, test_loader, device)
-    pred_real = inverse_transform_1d(scaler, pred_scaled.reshape(-1)).reshape(pred_scaled.shape)
-    true_real = inverse_transform_1d(scaler, true_scaled.reshape(-1)).reshape(true_scaled.shape)
+    pred_real = inverse_transform_1d(
+        target_scaler, pred_scaled.reshape(-1)
+    ).reshape(pred_scaled.shape)
+    true_real = inverse_transform_1d(
+        target_scaler, true_scaled.reshape(-1)
+    ).reshape(true_scaled.shape)
 
     pred_data = {}
     timestamp_steps = [str(ts).split("|") for ts in timestamps_joined]

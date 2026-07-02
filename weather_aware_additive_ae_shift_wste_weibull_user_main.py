@@ -1382,6 +1382,25 @@ def train_one_client(client_id: int, csv_path: str, args, base_cfg: WeatherAware
         val_component_stats = compute_component_stats(val_collected, y_scaler)
         val_share_metrics = component_share_dict(val_component_stats, prefix="val")
 
+        # Report which part of STE is actually dominating after alpha_ste is
+        # applied.  lambda_ste is common to both terms, so it does not affect
+        # their relative shares.
+        train_ste_mse_component = (1.0 - cfg.alpha_ste) * train_stats["loss_seq"]
+        train_ste_fourier_component = cfg.alpha_ste * train_stats["loss_fourier"]
+        train_ste_component_sum = train_ste_mse_component + train_ste_fourier_component
+        val_ste_mse_component = (1.0 - cfg.alpha_ste) * val_stats["loss_seq"]
+        val_ste_fourier_component = cfg.alpha_ste * val_stats["loss_fourier"]
+        val_ste_component_sum = val_ste_mse_component + val_ste_fourier_component
+        eps_share = 1e-12
+        train_ste_mse_share_percent = 100.0 * train_ste_mse_component / (train_ste_component_sum + eps_share)
+        train_ste_fourier_share_percent = 100.0 * train_ste_fourier_component / (
+            train_ste_component_sum + eps_share
+        )
+        val_ste_mse_share_percent = 100.0 * val_ste_mse_component / (val_ste_component_sum + eps_share)
+        val_ste_fourier_share_percent = 100.0 * val_ste_fourier_component / (
+            val_ste_component_sum + eps_share
+        )
+
         improved = val_metrics["RMSE"] < best_val_rmse
         if improved:
             best_val_rmse = val_metrics["RMSE"]
@@ -1406,6 +1425,10 @@ def train_one_client(client_id: int, csv_path: str, args, base_cfg: WeatherAware
             "train_loss_weighted_seq": train_stats["loss_weighted_seq"],
             "train_loss_fourier": train_stats["loss_fourier"],
             "train_weighted_loss_ste": train_stats["weighted_loss_ste"],
+            "train_ste_mse_component": train_ste_mse_component,
+            "train_ste_fourier_component": train_ste_fourier_component,
+            "train_ste_mse_share_percent": train_ste_mse_share_percent,
+            "train_ste_fourier_share_percent": train_ste_fourier_share_percent,
             "train_loss_trend_smooth": train_stats["loss_trend_smooth"],
             "train_weighted_loss_trend_smooth": train_stats["weighted_loss_trend_smooth"],
             "train_loss_ae_y": train_stats["loss_ae_y"],
@@ -1424,6 +1447,10 @@ def train_one_client(client_id: int, csv_path: str, args, base_cfg: WeatherAware
             "val_loss_weighted_seq": val_stats["loss_weighted_seq"],
             "val_loss_fourier": val_stats["loss_fourier"],
             "val_weighted_loss_ste": val_stats["weighted_loss_ste"],
+            "val_ste_mse_component": val_ste_mse_component,
+            "val_ste_fourier_component": val_ste_fourier_component,
+            "val_ste_mse_share_percent": val_ste_mse_share_percent,
+            "val_ste_fourier_share_percent": val_ste_fourier_share_percent,
             "val_loss_trend_smooth": val_stats["loss_trend_smooth"],
             "val_weighted_loss_trend_smooth": val_stats["weighted_loss_trend_smooth"],
             "val_loss_ae_y": val_stats["loss_ae_y"],
@@ -1494,6 +1521,8 @@ def train_one_client(client_id: int, csv_path: str, args, base_cfg: WeatherAware
             f"TrainLoss={train_stats['loss']:.6f} | "
             f"Next={train_stats['loss_next']:.6f} | "
             f"STEW={train_stats['weighted_loss_ste']:.6f} | "
+            f"TrainSTE[MSE={train_ste_mse_share_percent:.1f}%/Fourier={train_ste_fourier_share_percent:.1f}%] | "
+            f"ValSTE[MSE={val_ste_mse_share_percent:.1f}%/Fourier={val_ste_fourier_share_percent:.1f}%] | "
             f"TrendSmoothW={train_stats['weighted_loss_trend_smooth']:.6f} | "
             f"RwAEW={train_stats['weighted_loss_rw_ae']:.6f} | "
             f"ValLoss={val_stats['loss']:.6f} | "
