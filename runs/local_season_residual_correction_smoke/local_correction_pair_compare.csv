@@ -1,0 +1,2 @@
+﻿client_id,season_encoder,residual_corrector,q,base_sMAPE,corrected_sMAPE,delta_sMAPE,improve_sMAPE_percent,base_WAPE,corrected_WAPE,delta_WAPE,improve_WAPE_percent,is_improved_by_sMAPE,is_improved_by_WAPE
+1,Transformer,LowRankAdapter,6,52.46672029090135,42.35669845282272,-10.11002183807863,19.269398943424896,36.420319479421764,27.368929462504155,-9.051390016917608,24.85258201402108,True,True

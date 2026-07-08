@@ -1,0 +1,23 @@
+Component predictability verdict
+
+Overall, season sMAPE is higher than trend sMAPE in 24/24 matched experiments (100.00%).
+Overall, season WAPE is higher than trend WAPE in 24/24 matched experiments (100.00%).
+Based on sMAPE, the results support the conclusion that the season component is generally harder to predict under the current decomposition and model settings.
+
+By model:
+  DLinear: sMAPE 8/8 (100.00%), WAPE 8/8 (100.00%)
+  GRU: sMAPE 8/8 (100.00%), WAPE 8/8 (100.00%)
+  TCN: sMAPE 8/8 (100.00%), WAPE 8/8 (100.00%)
+
+By smoothing window:
+  6: sMAPE 6/6 (100.00%), WAPE 6/6 (100.00%)
+  12: sMAPE 6/6 (100.00%), WAPE 6/6 (100.00%)
+  24: sMAPE 6/6 (100.00%), WAPE 6/6 (100.00%)
+  48: sMAPE 6/6 (100.00%), WAPE 6/6 (100.00%)
+
+By client:
+  1: sMAPE 12/12 (100.00%), WAPE 12/12 (100.00%)
+  2: sMAPE 12/12 (100.00%), WAPE 12/12 (100.00%)
+
+By decomposition mode:
+  autoformer_same: sMAPE 24/24 (100.00%), WAPE 24/24 (100.00%)
