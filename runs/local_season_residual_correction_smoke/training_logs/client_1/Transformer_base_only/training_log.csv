@@ -1,0 +1,2 @@
+﻿epoch,stage,train_loss,loss_y,loss_trend,loss_season,loss_delta
+1,warmup,1.5742981694622813,0.6078617147312392,0.6442595784952264,0.6443066658317442,0.0

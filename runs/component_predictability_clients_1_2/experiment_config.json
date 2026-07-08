@@ -1,0 +1,32 @@
+{
+  "data_paths": [
+    "per_client_merged_1h\\client_1_load_weather_1h.csv",
+    "per_client_merged_1h\\client_2_load_weather_1h.csv"
+  ],
+  "start_time": "2011-06-01 00:00:00",
+  "end_time": "2013-07-31 23:59:59",
+  "seq_len": 48,
+  "horizon": 6,
+  "smoothing_windows": [
+    6,
+    12,
+    24,
+    48
+  ],
+  "models": [
+    "GRU",
+    "DLinear",
+    "TCN"
+  ],
+  "device": "cuda",
+  "train_ratio": 0.8,
+  "test_ratio": 0.19999999999999996,
+  "decomp_modes": [
+    "autoformer_same"
+  ],
+  "epochs": 40,
+  "batch_size": 256,
+  "lr": 0.001,
+  "scaler": "standard",
+  "seed": 42
+}

@@ -1,0 +1,19 @@
+Local season residual correction verdict
+
+By season encoder and mode:
+  Transformer / base_only: sMAPE=52.467, WAPE=36.420
+  Transformer / residual_corrected: sMAPE=42.357, WAPE=27.369
+
+By residual corrector:
+  LowRankAdapter: sMAPE=42.357, WAPE=27.369
+
+By residual length q:
+  q=6: sMAPE=42.357, WAPE=27.369
+
+Best residual-corrected combination by sMAPE: client_1, Transformer, LowRankAdapter, q=6, sMAPE=42.357, WAPE=27.369.
+
+Residual correction improved sMAPE in 1/1 paired runs (100.00%).
+Residual correction improved WAPE in 1/1 paired runs (100.00%).
+Average sMAPE improvement: 19.269%; average WAPE improvement: 24.853%.
+
+Conclusion is based only on the generated local experiment results.
